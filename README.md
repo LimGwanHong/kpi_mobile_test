@@ -13,8 +13,8 @@
 | Vite | 5.1.6 | 빌드 도구 |
 | Bootstrap | 5.3.2 | UI 프레임워크 |
 | Nginx | - | 웹 서버 |
-| Node.js | 18.0.0 | JavaScript 런타임 |
-| npm | 9.0.0 | 패키지 매니저 |
+| Node.js | 24.11.1 | JavaScript 런타임 |
+| npm | 11.6.2 | 패키지 매니저 |
 
 ## 프로젝트 구조
 

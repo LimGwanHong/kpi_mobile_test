@@ -1,0 +1,159 @@
+pipeline {
+    agent any
+
+    // Node.js 도구가 Jenkins Tools에 있으면 사용 (없으면 Verify 단계에서 실패)
+    tools {
+        nodejs 'NodeJS-18'
+    }
+
+    parameters {
+        choice(
+            name: 'DEPLOY_ENV',
+            choices: ['dev', 'prd'],
+            description: '배포 환경을 선택하세요'
+        )
+        booleanParam(
+            name: 'DEPLOY_ENABLED',
+            defaultValue: false,
+            description: '빌드 후 로컬 배포(파일 복사)를 실행하시겠습니까?'
+        )
+    }
+
+    environment {
+        PROJECT_NAME = 'vue-project'
+        PROJECT_VERSION = '1.0.0'
+
+        // ✅ 로컬 배포 경로 (원하는 경로로 바꿔서 쓰기)
+        DEV_LOCAL_DEPLOY_PATH = 'C:/deploy/ehub_mobile-kpi/dev'
+        PRD_LOCAL_DEPLOY_PATH = 'C:/deploy/ehub_mobile-kpi/prd'
+
+        // 백업 보관 위치 (선택)
+        BACKUP_ROOT = 'C:/deploy/_backup'
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                echo "📥 소스 코드 체크아웃"
+                checkout scm
+            }
+        }
+
+        stage('Verify Environment') {
+            steps {
+                echo "🔍 환경 검증 (Windows)"
+                bat '''
+                    @echo on
+                    where node
+                    node --version
+                    where npm
+                    npm --version
+                    where robocopy
+                    robocopy /?
+                '''
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                echo "📦 의존성 설치"
+                bat '''
+                    @echo on
+                    npm ci
+                '''
+            }
+        }
+
+        stage('Build') {
+            steps {
+                script {
+                    echo "🔨 빌드 시작: ${params.DEPLOY_ENV} 환경"
+                    echo "📦 Vite + Vue + Pinia + Router"
+
+                    if (params.DEPLOY_ENV == 'dev') {
+                        bat '@echo on\r\nnpm run build:dev'
+                    } else {
+                        bat '@echo on\r\nnpm run build:prd'
+                    }
+                }
+            }
+        }
+
+        stage('Archive Artifacts') {
+            steps {
+                echo "📁 빌드 결과물 아카이브"
+                archiveArtifacts artifacts: 'dist/**/*', fingerprint: true
+            }
+        }
+
+        stage('Deploy (Local Copy)') {
+            when {
+                expression { return params.DEPLOY_ENABLED == true }
+            }
+            steps {
+                script {
+                    def deployPath = (params.DEPLOY_ENV == 'dev')
+                            ? env.DEV_LOCAL_DEPLOY_PATH
+                            : env.PRD_LOCAL_DEPLOY_PATH
+
+                    echo "🚀 로컬 배포 시작: ${deployPath}"
+
+                    // dist 존재 체크 + 배포 폴더 생성 + 백업 + 동기화 복사
+                    bat """
+                        @echo on
+                        if not exist dist (
+                          echo ERROR: dist 폴더가 없습니다. 빌드가 실패했거나 산출물이 없습니다.
+                          exit /b 1
+                        )
+
+                        rem 배포 폴더 준비
+                        if not exist "${deployPath}" mkdir "${deployPath}"
+
+                        rem 백업(선택): 기존 배포 폴더를 timestamp로 백업
+                        for /f "tokens=1-4 delims=:. " %%a in ("%TIME%") do set HH=%%a& set MN=%%b& set SS=%%c
+                        set TS=%DATE:~0,4%%DATE:~5,2%%DATE:~8,2%_%HH%%MN%%SS%
+                        if not exist "${env.BACKUP_ROOT}" mkdir "${env.BACKUP_ROOT}"
+                        if exist "${deployPath}\\*" (
+                          echo Backup -> "${env.BACKUP_ROOT}\\${env.PROJECT_NAME}_${params.DEPLOY_ENV}_%TS%"
+                          xcopy "${deployPath}" "${env.BACKUP_ROOT}\\${env.PROJECT_NAME}_${params.DEPLOY_ENV}_%TS%\\" /E /I /Y >nul
+                        )
+
+                        rem robocopy는 성공해도 exit code가 1~7일 수 있음(정상)
+                        rem /MIR: dist와 배포폴더를 미러(삭제 동기화)
+                        rem /R:2 /W:2: 재시도 최소화
+                        robocopy "dist" "${deployPath}" /MIR /R:2 /W:2
+                        set RC=%ERRORLEVEL%
+                        echo robocopy exit code: %RC%
+
+                        rem 0~7은 정상 범위(복사/동기화 결과 코드)
+                        if %RC% GEQ 8 (
+                          echo ERROR: robocopy failed with exit code %RC%
+                          exit /b %RC%
+                        )
+
+                        echo ✅ 로컬 배포 완료
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ 파이프라인 성공!"
+            echo "프로젝트: ${env.PROJECT_NAME} v${env.PROJECT_VERSION}"
+            echo "환경: ${params.DEPLOY_ENV}"
+            echo "배포 여부: ${params.DEPLOY_ENABLED}"
+        }
+        failure {
+            echo "❌ 파이프라인 실패!"
+        }
+        always {
+            cleanWs(cleanWhenNotBuilt: false,
+                    deleteDirs: true,
+                    disableDeferredWipeout: true,
+                    notFailBuild: true)
+        }
+    }
+}
