@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "target": "ES6",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "preserve",
+    "allowImportingTsExtensions": false,
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "checkJs": false
+  },
+  "include": [
+    "src/**/*",
+    "src/**/*.vue"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ],
+  "vueCompilerOptions": {
+    "target": 3
+  }
+}
+

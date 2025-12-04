@@ -1,0 +1,32 @@
+{
+  "name": "vue-project",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Vue 3 + Pinia + Vue Router 프로젝트",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build:dev": "vite build --mode dev",
+    "build:prd": "vite build --mode prd",
+    "preview": "vite preview",
+    "nginx.dev": "C:/dev/tools/nginx/nginx.exe -c C:/dev/project/vue3/neoinfos_ehub_kpi_mobile/nginx/nginx.dev.conf",
+    "nginx.prd": "C:/dev/tools/nginx/nginx.exe -c C:/dev/project/vue3/neoinfos_ehub_kpi_mobile/nginx/nginx.prd.conf",
+    "nginx.stop": "C:/dev/tools/nginx/nginx.exe -s stop",
+    "nginx.reload": "C:/dev/tools/nginx/nginx.exe -s reload",
+    "nginx.test": "C:/dev/tools/nginx/nginx.exe -t -c C:/dev/project/vue3/neoinfos_ehub_kpi_mobile/nginx/nginx.dev.conf"
+  },
+  "dependencies": {
+    "axios": "^1.6.7",
+    "bootstrap": "^5.3.2",
+    "pinia": "^2.1.7",
+    "vue": "^3.4.21",
+    "vue-router": "^4.2.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.4",
+    "vite": "^5.1.6"
+  }
+}
