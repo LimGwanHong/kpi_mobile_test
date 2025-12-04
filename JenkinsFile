@@ -72,11 +72,15 @@ pipeline {
                     echo "📦 Vite + Vue + Pinia + Router"
 
                     if (params.DEPLOY_ENV == 'dev') {
-                        bat '@echo on
-                        npm run build:dev'
+                        bat '''
+                            @echo on
+                            npm run build:dev
+                        '''
                     } else {
-                        bat '@echo on
-                        npm run build:prd'
+                        bat '''
+                            @echo on
+                            npm run build:prd
+                        '''
                     }
                 }
             }
@@ -105,7 +109,7 @@ pipeline {
                     bat """
                         @echo on
                         chcp 65001 >nul
-                        
+
                         if not exist dist (
                           echo ERROR: dist 폴더가 없습니다. 빌드가 실패했거나 산출물이 없습니다.
                           exit /b 1
